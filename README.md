@@ -1,4 +1,4 @@
-# ECG_TOOLS by jcollfont
+# ECG_TOOLS
 
 This repo contains various tools for ECG signal processing used by Jaume Coll-Font.
 
@@ -9,7 +9,10 @@ The contents can be found in the following groups:
 
 The three blocks depend on each other, I do not recommend to separate them.
 
-I have tried to describe each file in the headers, but this is mostly "research code", which means that, at times, might be incomplete or poorly described. If you find issues with it, please contact me at jcollfont ADD gmail.com
+I have tried to describe each file in the headers, but this is mostly "research code", which means that, at times, might be incomplete or poorly described.
+
+This code has been developed by Jaume Coll-Font.
+If you find issues with it, please contact me at jcollfont ADD gmail.com
 
 
 ## Beat segmentation and alignment
