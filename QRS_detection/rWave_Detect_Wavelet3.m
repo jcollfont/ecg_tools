@@ -36,8 +36,10 @@ function [Rwave] = rWave_Detect_Wavelet3(x,optPlot,REFRAC)
 	%% define
 		SEP = 20; %max separation between jumps
 		JJ = 10; % num of sampled scales
-		[L N] = size(x);
+		[L, N] = size(x);
 		QRS = cell(1,L);
+		
+		numBlocks = 5;
 		
 		if ~exist('optPlot')
 			optPlot = false;
@@ -73,17 +75,36 @@ function [Rwave] = rWave_Detect_Wavelet3(x,optPlot,REFRAC)
 		end
 	
 	%% define thresholds
-		th = zeros(1,4);
-		for ii =1:3
-			th(ii) = sqrt( sum(Wx{ii+1}.^2)/N );
+% 		th = zeros(1,4);
+% 		for ii =1:3
+% 			th(ii) = sqrt( sum(Wx{ii+1}.^2)/N );
+% 		end
+% 			th(4) = .5*sqrt( sum(Wx{ii+1}.^2)/N );
+			
+		th = zeros(4,numBlocks);
+		for jj = 1:numBlocks
+			times = [1:ceil(N/numBlocks)] + (jj-1)*ceil(N/numBlocks);
+			if jj == numBlocks
+				times = ((jj-1)*ceil(N/numBlocks)+1):N;
+			end
+			for ii =1:3
+				th(ii,jj) = sqrt( sum(Wx{ii+1}(times).^2)/N );
+			end
+			th(4,jj) = .5*sqrt( sum(Wx{ii+1}(times).^2)/N );
 		end
-			th(4) = .5*sqrt( sum(Wx{ii+1}.^2)/N );
-				
+		
 	%% search for R-peak
 		for s = 1%for scale 1
 				
 				% search for maxima exceeding the thresholds
-					IX = find(abs(Wx{s+1}) > th(s));
+				IX = [];
+				for jj = 1:numBlocks
+					times = [1:ceil(N/numBlocks)] + (jj-1)*ceil(N/numBlocks);
+					if jj == numBlocks
+						times = ((jj-1)*ceil(N/numBlocks)+1):N;
+					end
+					IX = [IX  (find(abs(Wx{s+1}(times)) > th(s,jj)) + (jj-1)*ceil(N/numBlocks)) ];
+				end
 					
 				% search for zero crossing at scale 2^1
 					signs = sign(Wx{s+1}(IX));
@@ -129,8 +150,8 @@ function [Rwave] = rWave_Detect_Wavelet3(x,optPlot,REFRAC)
 				hold on;
 				title('RMS of the signal');
 				plot(Wx{2},'m--');
-				line([0 N],[th(1) th(1)],'Color','r', 'LineStyle','-.');
-				line([0 N],[-th(1) -th(1)],'Color','r', 'LineStyle','-.');
+				line([0 N],[th(1,1) th(1,1)],'Color','r', 'LineStyle','-.');
+				line([0 N],[-th(1,1) -th(1,1)],'Color','r', 'LineStyle','-.');
 				plot(Wx{3},'c--');
 				plot(x);
 				plot(Rwave,x(Rwave),'rx','LineWidth',2);

@@ -1,4 +1,4 @@
-function [filt_ECG, baseline, refPoints, refIntervals] = baselineCorrection_Splines_auto(ECG, margin, refSize)
+function [filt_ECG, baseline, refPoints, refIntervals] = baselineCorrection_Splines_auto(ECG, margin, refSize, refract)
 %% HELP:
 %		[filt_ECG] = baselineCorrection_Splines(ECG)
 %			This function applies baseline correction to the introduced ECG
@@ -12,6 +12,8 @@ function [filt_ECG, baseline, refPoints, refIntervals] = baselineCorrection_Spli
 %			- margin - int - number of samples before the R wave where to
 %			select the knot.
 %			- refSize - int - size of the reference interval.
+%			- refract - int - number of samples during which no beat should
+%			be detected. (estimated length of beat)
 %
 %		OUTPUT:
 %			- filt_ECG - <L,N>double - filtered ECG signal. Same structure
@@ -53,6 +55,10 @@ function [filt_ECG, baseline, refPoints, refIntervals] = baselineCorrection_Spli
 			t = 1:1:N;
 		end
 		
+		if ~exist('refract')
+			refract = 100;
+		end
+		
 	%% fix reference point (remove mean accross lead space)
 		if L >1
 				e = ones(1,L);
@@ -63,21 +69,28 @@ function [filt_ECG, baseline, refPoints, refIntervals] = baselineCorrection_Spli
 		rmsECG = sqrt( sum(ECG.^2,1) );
 		
 	%% User selection of the intervals
-		[Rwave] = rWave_Detect_Wavelet3(ECG,0);
+		[Rwave] = rWave_Detect_Wavelet3(ECG,0,refract);
 		
 		nInt = numel(Rwave);
 		refIntervals = cell(1,2);
 		refIntervals{1} = zeros(1,nInt);
 		refIntervals{2} = zeros(1,nInt);
+		falseStart = false;
 		for r = 1:nInt
 			
 			tmp = Rwave(r) - margin;
-			if tmp < 1
-				tmp = 1;
+			if tmp >= 1
+				refIntervals{1}(r) = tmp;
+				refIntervals{2}(r) = tmp + refSize;
+			else
+				falseStart = true;
 			end
-			refIntervals{1}(r) = tmp;
-			refIntervals{2}(r) = tmp + refSize;
 			
+		end
+		
+		if falseStart
+			refIntervals{1} = refIntervals{1}(2:end);
+			refIntervals{2} = refIntervals{2}(2:end); 
 		end
 			
 	%% For each lead
@@ -100,8 +113,8 @@ function [filt_ECG, baseline, refPoints, refIntervals] = baselineCorrection_Spli
 		
 		
 	% plot resulting rms
-		figure; plot(ECG(l,:)');plot(baseline{l} ,'r');
-		rmsECG = sqrt( sum(filt_ECG.^2,1) );
-		figure;title('filtered ECG rms');plot(rmsECG);
+% 		figure; plot(ECG(l,:)');plot(baseline{l} ,'r');
+% 		rmsECG = sqrt( sum(filt_ECG.^2,1) );
+% 		figure;title('filtered ECG rms');plot(rmsECG);
 		
 end% end of function
